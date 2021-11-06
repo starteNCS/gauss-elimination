@@ -1,60 +1,41 @@
 package whs.fpr;
 
+
+/**
+ *
+ */
 public class GaussElimination {
-    protected final int _count;
-    protected final double[][] _matrix;
 
-    public GaussElimination(int n){
-        _matrix = new double[n][n + 1];
-        _count = n;
-    }
-
-    public void loadDebugMatrix(){
-        if(_count != 3){
-            throw new RuntimeException("Could not load debugger matrix for matrices other than 3x3");
-        }
-        _matrix[0] = new double[]{1, 2, 3, 2};
-        _matrix[1] = new double[]{1, 1, 1, 2};
-        _matrix[2] = new double[]{3, 3, 1, 0};
-
-        // result should be x1 = 5, x2 = -6, x3 = 3
-    }
-
-    public void loadDebugMatrix2(){
-        if(_count != 3){
-            throw new RuntimeException("Could not load debugger matrix for matrices other than 3x3");
-        }
-        _matrix[0] = new double[]{7, 3, -5, -12};
-        _matrix[1] = new double[]{-1, -2, 4, 5};
-        _matrix[2] = new double[]{-4, 1, -3, 1};
-
-        // result should be x1 = 5, x2 = -6, x3 = 3
-    }
-
-    public double[] calculate(){
-        for(int currentRow = 0; currentRow < _count - 1; currentRow++){
-            int bestDiagonalRow = findOptimalPivotRow(currentRow + 1, /*row == diagonalIndex*/ currentRow);
+    public static AxBMatrix toEchelonForm(AxBMatrix matrix){
+        for(int currentRow = 0; currentRow < matrix.count - 1; currentRow++){
+            int bestDiagonalRow = findOptimalPivotRow(matrix, currentRow + 1, /*row == diagonalIndex*/ currentRow);
             if(bestDiagonalRow > currentRow){
-                swapRow(currentRow, bestDiagonalRow);
+                matrix.swapRow(currentRow, bestDiagonalRow);
             }
 
-            for(int rowToEliminateUnderDiagonal = currentRow + 1; rowToEliminateUnderDiagonal < _count; rowToEliminateUnderDiagonal++){
-                double multiplicator = findMultiplicator(currentRow, rowToEliminateUnderDiagonal, currentRow);
-                double[] multipliedRow = multiplyRow(currentRow, multiplicator);
-                addRow(rowToEliminateUnderDiagonal, multipliedRow);
+            for(int rowToEliminateUnderDiagonal = currentRow + 1; rowToEliminateUnderDiagonal < matrix.count; rowToEliminateUnderDiagonal++){
+                double multiplicator = findMultiplicator(matrix, currentRow, rowToEliminateUnderDiagonal, currentRow);
+                double[] multipliedRow = multiplyRow(matrix, currentRow, multiplicator);
+                matrix.subtractRow(rowToEliminateUnderDiagonal, multipliedRow);
             }
         }
 
-        double[] results = new double[_count];
-        for(int currentRow = _count - 1; currentRow >= 0; currentRow--){
-            double currentValue = _matrix[currentRow][currentRow];
-            double currentResult = _matrix[currentRow][_count];
+        return matrix;
+    }
 
-            for(int i = 0; i < _count - currentRow - 1; i++){
-                int currentResultIndex = _count - 1 -i;
-                var o = results[currentResultIndex];
-                var y = _matrix[currentRow][currentResultIndex];
-                currentResult -= o * y;
+    public static double[] solveFromEchelonForm(AxBMatrix matrix){
+        if(!isEchelonForm(matrix)){
+            throw new RuntimeException("Cannot calculate from echelon form, if the matrix is not in echelon form");
+        }
+
+        double[] results = new double[matrix.count];
+        for(int currentRow = matrix.count - 1; currentRow >= 0; currentRow--){
+            double currentValue = matrix.getRow(currentRow)[currentRow];
+            double currentResult = matrix.getRow(currentRow)[matrix.count];
+
+            for(int i = 0; i < matrix.count - currentRow - 1; i++){
+                int currentResultIndex = matrix.count - 1 -i;
+                currentResult -= results[currentResultIndex] * matrix.getRow(currentRow)[currentResultIndex];
             }
 
             results[currentRow] = currentResult / currentValue;
@@ -63,17 +44,37 @@ public class GaussElimination {
         return results;
     }
 
-    private double findMultiplicator(int sourceIndex, int targetIndex, int diagonalIndex){
-        double source = _matrix[sourceIndex][diagonalIndex];
-        double target = _matrix[targetIndex][diagonalIndex];
+    public static double[] solve(AxBMatrix matrix) {
+        if(isEchelonForm(matrix)){
+            return solveFromEchelonForm(matrix);
+        }
+
+        return solveFromEchelonForm(toEchelonForm(matrix));
+    }
+
+    public static boolean isEchelonForm(AxBMatrix matrix){
+        for(int i = 0; i < matrix.count; i++){
+            double[] row = matrix.getRow(i);
+            for(int o = 0; o < i; o++){
+                if(row[o] != 0){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static double findMultiplicator(AxBMatrix matrix, int sourceIndex, int targetIndex, int diagonalIndex){
+        double source = matrix.getRow(sourceIndex)[diagonalIndex];
+        double target = matrix.getRow(targetIndex)[diagonalIndex];
 
         return target / source;
     }
 
-    private double[] multiplyRow(int rowIndex, double by){
-        double[] results = new double[_count + 1];
+    private static double[] multiplyRow(AxBMatrix matrix, int index, double by){
+        double[] results = new double[matrix.count + 1];
         int currentIndex = 0;
-        for(double value : _matrix[rowIndex]){
+        for(double value : matrix.getRow(index)){
             results[currentIndex] = value * by;
             currentIndex += 1;
         }
@@ -81,29 +82,17 @@ public class GaussElimination {
         return results;
     }
 
-    private void addRow(int toAddRowIndex, double[] values){
-        for(int i = 0; i <= _count; i++){
-            _matrix[toAddRowIndex][i] = _matrix[toAddRowIndex][i] - values[i];
-        }
-    }
-
-    private int findOptimalPivotRow(int startRowIndex, int diagonalIndex){
-        double currentHighestValue = _matrix[startRowIndex][diagonalIndex];
+    private static int findOptimalPivotRow(AxBMatrix matrix, int startRowIndex, int diagonalIndex){
+        double currentHighestValue = matrix.getRow(startRowIndex)[diagonalIndex];
         int optimalRow = startRowIndex;
-        for (int i = startRowIndex; i < _count; i++){
-            if(_matrix[i][diagonalIndex] > currentHighestValue){
-                currentHighestValue = _matrix[i][diagonalIndex];
+        for (int i = startRowIndex; i < matrix.count; i++){
+            if(matrix.getRow(i)[diagonalIndex] > currentHighestValue){
+                currentHighestValue = matrix.getRow(i)[diagonalIndex];
                 optimalRow = i;
             }
         }
 
         return optimalRow;
-    }
-
-    private void swapRow(int sourceIndex, int targetIndex){
-        double[] targetCopy = _matrix[targetIndex];
-        _matrix[targetIndex] = _matrix[sourceIndex];
-        _matrix[sourceIndex] = targetCopy;
     }
 
 }
