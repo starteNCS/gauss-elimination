@@ -20,9 +20,9 @@ public class GaussElimination {
         // result should be x1 = 5, x2 = -6, x3 = 3
     }
 
-    public void calculate(){
-        for(int currentRow = 0; currentRow < _count; currentRow++){
-            int bestDiagonalRow = findOptimalPivotRow(/*row == diagonalIndex*/ currentRow);
+    public double[] calculate(){
+        for(int currentRow = 0; currentRow < _count - 1; currentRow++){
+            int bestDiagonalRow = findOptimalPivotRow(currentRow + 1, /*row == diagonalIndex*/ currentRow);
             if(bestDiagonalRow > currentRow){
                 swapRow(currentRow, bestDiagonalRow);
             }
@@ -33,6 +33,23 @@ public class GaussElimination {
                 addRow(rowToEliminateUnderDiagonal, multipliedRow);
             }
         }
+
+        double[] results = new double[_count];
+        for(int currentRow = _count - 1; currentRow >= 0; currentRow--){
+            double currentValue = _matrix[currentRow][currentRow];
+            double currentResult = _matrix[currentRow][_count];
+
+            for(int i = 0; i < _count - currentRow - 1; i++){
+                int currentResultIndex = _count - 1 -i;
+                var o = results[currentResultIndex];
+                var y = _matrix[currentRow][currentResultIndex];
+                currentResult -= o * y;
+            }
+
+            results[currentRow] = currentResult / currentValue;
+        }
+
+        return results;
     }
 
     private double findMultiplicator(int sourceIndex, int targetIndex, int diagonalIndex){
@@ -55,14 +72,14 @@ public class GaussElimination {
 
     private void addRow(int toAddRowIndex, double[] values){
         for(int i = 0; i < _count; i++){
-            _matrix[toAddRowIndex][i] = _matrix[toAddRowIndex][i] * values[i];
+            _matrix[toAddRowIndex][i] = _matrix[toAddRowIndex][i] - values[i];
         }
     }
 
-    private int findOptimalPivotRow(int diagonalIndex){
-        double currentHighestValue = _matrix[0][diagonalIndex];
-        int optimalRow = 0;
-        for (int i = 1; i < _count; i++){
+    private int findOptimalPivotRow(int startRowIndex, int diagonalIndex){
+        double currentHighestValue = _matrix[startRowIndex][diagonalIndex];
+        int optimalRow = startRowIndex;
+        for (int i = startRowIndex; i < _count; i++){
             if(_matrix[i][diagonalIndex] > currentHighestValue){
                 currentHighestValue = _matrix[i][diagonalIndex];
                 optimalRow = i;

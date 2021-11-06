@@ -37,4 +37,12 @@ public class GaussEliminationUserInput extends GaussElimination{
             System.out.print("\n");
         }
     }
+
+    public void printResult(double[] result){
+        System.out.println("\nResult of Gauss Algorithm:");
+        for (int i = 0; i < result.length; i++){
+            System.out.printf("x%d = %.2f, ", i, result[i]);
+        }
+        System.out.println();
+    }
 }

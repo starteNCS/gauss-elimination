@@ -14,9 +14,9 @@ public class Main {
         gauss.loadDebugMatrix();
 
         gauss.printMatrix();
-
-        gauss.calculate();
-
+        var results = gauss.calculate();
         gauss.printMatrix();
+
+        gauss.printResult(results);
     }
 }
