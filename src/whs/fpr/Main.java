@@ -9,9 +9,9 @@ public class Main {
 //        int equationCount = new Scanner(System.in).nextInt();
 //	    var gauss = new GaussEliminationUserInput(equationCount);
 //        gauss.getEquationFromInput();
-
+//
         var gauss = new GaussEliminationUserInput(3);
-        gauss.loadDebugMatrix();
+        gauss.loadDebugMatrix2();
 
         gauss.printMatrix();
         var results = gauss.calculate();
